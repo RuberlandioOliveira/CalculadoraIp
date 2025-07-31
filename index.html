@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Sub-rede</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-image: url('https://picsum.photos/1920/1080');
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: #a6afa6;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    h2 {
+      color: #0e067c;
+      margin-bottom: 20px;
+    }
+
+    input,
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      width: 300px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #6d0202;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+
+    }
+
+    button:hover {
+      background-color: #045320;
+    }
+
+    pre {
+      background: #bae0a0;
+      padding: 30px;
+      border: 1px solid #ccc;
+      width: fit-content;
+      margin: 20px auto 0;
+      text-align: left;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1 style="color: #280463;"><b>Ruberlandio</b></h1>
+    <h2><b>Calculadora de Sub-rede IPv4</b></h2>
+
+    <label for="cidrInput">Digite o IP com CIDR (ex: 192.168.1.0/24):</label><br>
+    <input type="text" id="cidrInput" placeholder="192.168.1.0/24">
+    <br>
+    <button onclick="calcular()">Calcular</button>
+
+    <pre id="resultado"></pre>
+
+  </div>
+
+  <script>
+    function calcular() {
+      const cidr = document.getElementById("cidrInput").value;
+      const resultado = document.getElementById("resultado");
+      resultado.textContent = "";
+
+      try {
+        const [ip, prefixoStr] = cidr.trim().split('/');
+        const prefixo = parseInt(prefixoStr);
+        if (!ip || isNaN(prefixo) || prefixo < 0 || prefixo > 32) {
+          throw new Error("Formato inválido");
+        }
+
+        const partes = ip.split('.').map(Number);
+        if (partes.length !== 4 || partes.some(p => p < 0 || p > 255)) {
+          throw new Error("Endereço IP inválido");
+        }
+
+        const ipDecimal = (partes[0] << 24) | (partes[1] << 16) | (partes[2] << 8) | partes[3];
+        const mascara = 0xFFFFFFFF << (32 - prefixo);
+        const rede = ipDecimal & mascara;
+        const broadcast = rede | (~mascara >>> 0);
+
+        const totalHosts = prefixo === 32 ? 1 : prefixo === 31 ? 2 : (1 << (32 - prefixo)) - 2;
+
+        function intParaIp(int) {
+          return [
+            (int >>> 24) & 0xFF,
+            (int >>> 16) & 0xFF,
+            (int >>> 8) & 0xFF,
+            int & 0xFF
+          ].join('.');
+        }
+
+        const primeiroIP = prefixo >= 31 ? intParaIp(rede) : intParaIp(rede + 1);
+        const ultimoIP = prefixo >= 31 ? intParaIp(broadcast) : intParaIp(broadcast - 1);
+
+        resultado.textContent =
+          `Endereço de Rede:     ${intParaIp(rede)}
+Máscara de Sub-rede:  ${intParaIp(mascara)}
+Prefixo (CIDR):       /${prefixo}
+Broadcast:            ${intParaIp(broadcast)}
+Primeiro IP útil:     ${primeiroIP}
+Último IP útil:       ${ultimoIP}
+Total de Hosts:       ${totalHosts}`;
+      } catch (error) {
+        resultado.textContent = "Erro: Entrada inválida. Use o formato correto (ex: 192.168.0.0/24)";
+      }
+    }
+  </script>
+</body>
+
+</html>
